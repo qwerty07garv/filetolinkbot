@@ -1,10 +1,20 @@
-FROM caption_bot:latest
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
-RUN pip uninstall -y uvloop 2>/dev/null; \
-    rm -rf /usr/local/lib/python3.12/site-packages/uvloop* 2>/dev/null; \
-    pip install --no-cache-dir flask pymongo dnspython && \
-    echo "ALL DEPS INSTALLED"
-COPY bot.py web_server.py db_manager.py ./
-COPY templates/ ./templates/
-RUN mkdir -p uploads
-CMD ["python3", "bot.py"]
+
+# Install GCC for C-accelerated TgCrypto compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc build-essential libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 5000 10000
+
+CMD ["python", "bot.py"]
