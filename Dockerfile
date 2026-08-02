@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc build-essential libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+COPY . .
 
 EXPOSE 5000 10000
 
-CMD python /app/app.py
+CMD ["python", "main.py"]
