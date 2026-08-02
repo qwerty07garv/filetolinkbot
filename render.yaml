@@ -17,3 +17,5 @@ services:
         sync: false
       - key: PORT
         value: 10000
+      - key: WEB_CONCURRENCY
+        value: 1
