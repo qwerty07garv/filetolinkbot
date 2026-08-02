@@ -1,7 +1,6 @@
 hydrogram
 aiohttp
-pymongo
 motor
-tgcrypto
-cryptography
+pymongo
 dnspython
+cryptography
