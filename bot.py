@@ -6,9 +6,6 @@ import asyncio
 from datetime import datetime
 from aiohttp import web
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
 from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from hydrogram.enums import ParseMode
@@ -45,8 +42,6 @@ app = Client(
     workers=32,
     sleep_threshold=60
 )
-
-web_server.set_bot_app(app, loop)
 
 async def check_fsub(client: Client, user_id: int):
     for _ in range(3):
@@ -103,7 +98,7 @@ async def start_handler(client: Client, message: Message):
         return
 
     welcome_text = (
-        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v7.5</b></blockquote>\n\n"
+        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v7.6</b></blockquote>\n\n"
         f"👋 Welcome <b>{user_name}</b>!\n\n"
         f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
         f"<pre><code class=\"language-python\">\n"
@@ -364,6 +359,8 @@ async def main():
     await app.start()
     logger.info("🤖 Hydrogram MTProto Client Started")
 
+    web_server.set_bot_app(app, asyncio.get_running_loop())
+
     await init_indexes()
     asyncio.create_task(mongo_health_check_loop())
 
@@ -377,4 +374,4 @@ async def main():
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    loop.run_until_complete(main())
+    asyncio.run(main())
