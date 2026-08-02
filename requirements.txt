@@ -1,0 +1,7 @@
+hydrogram
+aiohttp
+pymongo
+motor
+tgcrypto
+cryptography
+dnspython
