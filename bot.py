@@ -7,7 +7,6 @@ import asyncio
 from datetime import datetime
 from aiohttp import web
 
-# Force unbuffered output so Render logs show everything immediately
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
@@ -38,7 +37,6 @@ START_TIME  = time.time()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Use in_memory=True to eliminate SQLite session disk locks on Cloud containers
 app = Client(
     name="movieshouse_bot_session",
     api_id=API_ID,
@@ -104,7 +102,7 @@ async def start_handler(client: Client, message: Message):
         return
 
     welcome_text = (
-        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v8.0</b></blockquote>\n\n"
+        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v8.5</b></blockquote>\n\n"
         f"👋 Welcome <b>{user_name}</b>!\n\n"
         f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
         f"<pre><code class=\"language-python\">\n"
@@ -362,21 +360,22 @@ async def handle_callback(client: Client, query: CallbackQuery):
         await query.edit_message_text("<blockquote><b>🗑️ Link Deleted!</b></blockquote>", parse_mode=ParseMode.HTML)
 
 async def main():
-    print(f"🚀 Starting Render Service on Port {PORT}...", flush=True)
-    await app.start()
-    logger.info("🤖 Hydrogram MTProto Client Started (In-Memory)")
-
-    web_server.set_bot_app(app, asyncio.get_running_loop())
-
-    await init_indexes()
-    asyncio.create_task(mongo_health_check_loop())
-
+    print(f"🚀 Launching Native Web Server FIRST on Port {PORT} for Instant Health-Check...", flush=True)
     web_app = web_server.create_aiohttp_app()
     runner  = web.AppRunner(web_app)
     await runner.setup()
     site    = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
-    print(f"🌐 Native aiohttp Web Server Successfully Running on Port {PORT}", flush=True)
+    print(f"🌐 Native aiohttp Web Server Running & Health Check Ready on Port {PORT}", flush=True)
+
+    print("🤖 Starting Hydrogram MTProto Client in RAM Memory...", flush=True)
+    await app.start()
+    print("✅ Hydrogram MTProto Client Started Successfully!", flush=True)
+
+    web_server.set_bot_app(app, asyncio.get_running_loop())
+
+    await init_indexes()
+    asyncio.create_task(mongo_health_check_loop())
 
     await asyncio.Event().wait()
 
