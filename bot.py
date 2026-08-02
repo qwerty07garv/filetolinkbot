@@ -3,6 +3,7 @@ import sys
 import uuid
 import time
 import logging
+import traceback
 import asyncio
 from datetime import datetime
 from aiohttp import web
@@ -10,34 +11,54 @@ from aiohttp import web
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
+print("🔍 STEP 1: Importing Hydrogram...", flush=True)
 from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from hydrogram.enums import ParseMode
 from hydrogram.errors import UserNotParticipant, FloodWait
 
+print("🔍 STEP 2: Importing DB Manager...", flush=True)
 from db_manager import (
     init_indexes, mongo_health_check_loop, save_file_record, get_file_record,
     delete_file_record, get_total_stats, get_total_users_count, save_user, get_all_users
 )
 import web_server
 
-BOT_TOKEN   = os.getenv("BOT_TOKEN", "8844186435:AAEQ3EgwIzFut6XdCc-u8_Gc0qn_xsNOd5s").strip()
-API_ID      = int(os.getenv("API_ID", "38319323"))
-API_HASH    = os.getenv("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2").strip()
-BASE_URL    = os.getenv("BASE_URL", "http://222.167.207.30:5050").strip()
-CHANNEL_URL = os.getenv("CHANNEL_URL", "https://t.me/movieshouseworld").strip()
-CHANNEL_ID  = os.getenv("CHANNEL_ID", "@movieshouseworld").strip()
-PORT        = int(os.getenv("PORT", "10000"))
+def clean_env_str(key, default):
+    val = os.getenv(key, default)
+    if not val:
+        return default
+    return str(val).strip().replace('"', '').replace("'", "")
 
-raw_admins  = os.getenv("ADMIN_IDS", "1785600474,1855042026")
-ADMIN_IDS   = [int(x.strip()) for x in raw_admins.split(",") if x.strip()]
+def clean_env_int(key, default):
+    val = os.getenv(key, str(default))
+    if not val:
+        return default
+    try:
+        cleaned = str(val).strip().replace('"', '').replace("'", "")
+        return int(cleaned)
+    except Exception as e:
+        print(f"⚠️ Warning: Invalid integer for {key} ('{val}'), falling back to default {default}. Error: {e}", flush=True)
+        return default
+
+BOT_TOKEN   = clean_env_str("BOT_TOKEN", "8844186435:AAEQ3EgwIzFut6XdCc-u8_Gc0qn_xsNOd5s")
+API_ID      = clean_env_int("API_ID", 38319323)
+API_HASH    = clean_env_str("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2")
+BASE_URL    = clean_env_str("BASE_URL", "http://222.167.207.30:5050")
+CHANNEL_URL = clean_env_str("CHANNEL_URL", "https://t.me/movieshouseworld")
+CHANNEL_ID  = clean_env_str("CHANNEL_ID", "@movieshouseworld")
+PORT        = clean_env_int("PORT", 10000)
+
+raw_admins  = clean_env_str("ADMIN_IDS", "1785600474,1855042026")
+ADMIN_IDS   = [int(x.strip()) for x in raw_admins.split(",") if x.strip() and x.strip().isdigit()]
 
 START_TIME  = time.time()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Global client placeholder (instantiated inside async main to prevent Python 3.12 event loop import errors)
+print(f"✅ STEP 3: Config Parsed Cleanly -> PORT: {PORT}, API_ID: {API_ID}, BOT_TOKEN: {BOT_TOKEN[:10]}...", flush=True)
+
 app = None
 
 def get_app():
@@ -53,7 +74,6 @@ def get_app():
             sleep_threshold=60
         )
 
-        # Register Message Handlers
         @app.on_message(filters.command("start"))
         async def start_handler(client: Client, message: Message):
             user_id   = message.from_user.id if message.from_user else 0
@@ -75,7 +95,7 @@ def get_app():
                 return
 
             welcome_text = (
-                f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v9.0</b></blockquote>\n\n"
+                f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v10.0</b></blockquote>\n\n"
                 f"👋 Welcome <b>{user_name}</b>!\n\n"
                 f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
                 f"<pre><code class=\"language-python\">\n"
@@ -394,4 +414,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as e:
         print(f"❌ FATAL ENGINE CRASH: {e}", flush=True)
+        sys.stderr.flush()
         raise e
