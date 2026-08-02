@@ -44,7 +44,10 @@ def clean_env_int(key, default):
 BOT_TOKEN   = clean_env_str("BOT_TOKEN", "8844186435:AAEQ3EgwIzFut6XdCc-u8_Gc0qn_xsNOd5s")
 API_ID      = clean_env_int("API_ID", 38319323)
 API_HASH    = clean_env_str("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2")
-BASE_URL    = clean_env_str("BASE_URL", "https://filetolinkbot-phzj.onrender.com")
+raw_base_url = clean_env_str("BASE_URL", "https://filetolinkbot-phzj.onrender.com")
+if "222.167.207.30" in raw_base_url or "5050" in raw_base_url or not raw_base_url.startswith("http"):
+    raw_base_url = "https://filetolinkbot-phzj.onrender.com"
+BASE_URL    = raw_base_url
 CHANNEL_URL = clean_env_str("CHANNEL_URL", "https://t.me/movieshouseworld")
 CHANNEL_ID  = clean_env_str("CHANNEL_ID", "@movieshouseworld")
 PORT        = clean_env_int("PORT", 10000)
