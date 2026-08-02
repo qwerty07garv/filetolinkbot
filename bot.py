@@ -26,6 +26,7 @@ API_HASH    = os.getenv("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2")
 BASE_URL    = os.getenv("BASE_URL", "http://222.167.207.30:5050")
 CHANNEL_URL = os.getenv("CHANNEL_URL", "https://t.me/movieshouseworld")
 CHANNEL_ID  = os.getenv("CHANNEL_ID", "@movieshouseworld")
+PORT        = int(os.getenv("PORT", "5000"))
 
 raw_admins  = os.getenv("ADMIN_IDS", "1785600474,1855042026")
 ADMIN_IDS   = [int(x.strip()) for x in raw_admins.split(",") if x.strip()]
@@ -40,7 +41,7 @@ app = Client(
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN,
-    workdir="/app",
+    workdir="/tmp",
     workers=32,
     sleep_threshold=60
 )
@@ -102,13 +103,13 @@ async def start_handler(client: Client, message: Message):
         return
 
     welcome_text = (
-        f"<blockquote><b>🎬 MoviesHouse PRO — Production Enterprise Engine v7.0</b></blockquote>\n\n"
+        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v7.5</b></blockquote>\n\n"
         f"👋 Welcome <b>{user_name}</b>!\n\n"
         f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
         f"<pre><code class=\"language-python\">\n"
         f"[SYSTEM ENGINE]\n"
         f"Engine      : Hydrogram MTProto + Async Motor DB\n"
-        f"Server      : 222.167.207.30:5050 (Direct Socket)\n"
+        f"Server      : Render High-Speed Cloud (1 Gbps)\n"
         f"Fallback    : Instant Per-Call Mongo Failover (1000ms)\n"
         f"Health-Check: Auto-Reconnection & RAM Sync Loop Active\n"
         f"Cache       : Native aiohttp Startup Eviction Task\n"
@@ -185,7 +186,7 @@ async def admin_stats_handler(client: Client, message: Message):
         f"Total Registered Users : {total_users}\n"
         f"Total Links Generated  : {total_files}\n"
         f"Uptime                 : {uptime_sec} seconds\n"
-        f"Server                 : 222.167.207.30:5050\n"
+        f"Server Host            : Render Cloud Platform\n"
         f"Engine                 : Async Motor MongoDB + Hydrogram\n"
         f"Channel                : @movieshouseworld\n"
         f"</code></pre>"
@@ -277,7 +278,7 @@ async def handle_file(client: Client, message: Message):
         f"  \"file_id\": \"{file_id}\",\n"
         f"  \"name\": \"{file_name}\",\n"
         f"  \"size\": \"{file_size_mb:.2f} MB\",\n"
-        f"  \"status\": \"Async Motor Stream Ready\"\n"
+        f"  \"status\": \"Render Cloud Stream Ready\"\n"
         f"}}\n"
         f"</code></pre>\n\n"
         f"🔗 <b>Web Download & Stream Page:</b>\n"
@@ -318,7 +319,7 @@ async def handle_callback(client: Client, query: CallbackQuery):
         uptime_sec = int(time.time() - START_TIME)
         stats_text = (
             f"<blockquote><b>📊 MoviesHouse PRO Enterprise System Stats</b></blockquote>\n\n"
-            f"<pre><code class=\"language-python\">\n[DATABASE STATS]\nTotal Users          : {users}\nTotal Links Generated : {total}\nUptime               : {uptime_sec}s\nServer               : 222.167.207.30:5050\nEngine               : Async Motor MongoDB + Hydrogram\nChannel              : @movieshouseworld\n</code></pre>"
+            f"<pre><code class=\"language-python\">\n[DATABASE STATS]\nTotal Users          : {users}\nTotal Links Generated : {total}\nUptime               : {uptime_sec}s\nServer               : Render Cloud Platform\nEngine               : Async Motor MongoDB + Hydrogram\nChannel              : @movieshouseworld\n</code></pre>"
         )
         back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
         await query.edit_message_text(stats_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
@@ -335,8 +336,7 @@ async def handle_callback(client: Client, query: CallbackQuery):
             f"<blockquote><b>⚡ Real-Time Network & Ping Analytics</b></blockquote>\n\n"
             f"<pre><code class=\"language-bash\">\n"
             f"Telegram MTProto Ping : {ping_ms} ms\n"
-            f"Server Host           : 222.167.207.30\n"
-            f"Port                  : 5050 (Direct Sockets)\n"
+            f"Server Host           : Render Cloud Platform (1 Gbps)\n"
             f"Database Driver       : Async Motor MongoDB\n"
             f"Hardware Decryption   : TgCrypto C-Accelerated\n"
             f"Status                : 100% Operational\n"
@@ -346,7 +346,7 @@ async def handle_callback(client: Client, query: CallbackQuery):
         await query.edit_message_text(speed_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
     elif data == "btn_security":
-        sec_text = f"<blockquote><b>🛡️ Enterprise Security & Privacy Guard</b></blockquote>\n\n• Server: 222.167.207.30:5050.\n• Powered by Hydrogram MTProto + Async Motor DB."
+        sec_text = f"<blockquote><b>🛡️ Enterprise Security & Privacy Guard</b></blockquote>\n\n• Server: Render Cloud Host.\n• Powered by Hydrogram MTProto + Async Motor DB."
         back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
         await query.edit_message_text(sec_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
@@ -370,9 +370,9 @@ async def main():
     web_app = web_server.create_aiohttp_app()
     runner  = web.AppRunner(web_app)
     await runner.setup()
-    site    = web.TCPSite(runner, "0.0.0.0", 5000)
+    site    = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
-    logger.info("🌐 Native aiohttp Web Server Running on Port 5000")
+    logger.info(f"🌐 Native aiohttp Web Server Running on Port {PORT}")
 
     await asyncio.Event().wait()
 

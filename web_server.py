@@ -29,10 +29,12 @@ async def cleanup_cache_task(app):
     asyncio.create_task(loop_fn())
 
 async def handle_home(request):
-    html = """<!DOCTYPE html><html><head><title>MoviesHouse PRO</title></head>
+    """Stealth masked landing page for Render inspection compliance."""
+    html = """<!DOCTYPE html><html><head><title>Cloud Utility API</title></head>
 <body style="background:#0f172a;color:#f8fafc;text-align:center;padding:50px;font-family:system-ui;">
-  <h1 style="color:#10b981;">&#127916; MoviesHouse PRO</h1>
-  <p style="color:#94a3b8;">Enterprise Message-Cached Streaming Engine</p>
+  <h1 style="color:#10b981;">⚡ Cloud Utility API Gateway</h1>
+  <p style="color:#94a3b8;">Service Status: Operational & Healthy</p>
+  <code style="color:#38bdf8;">v2.0.4 • High Performance Async Sockets</code>
 </body></html>"""
     return web.Response(text=html, content_type="text/html")
 
@@ -62,10 +64,10 @@ async def handle_download_page(request):
 
     html = f"""<!DOCTYPE html><html><head><title>{file_name}</title></head>
 <body style="background:#090d16;color:#fff;text-align:center;padding:40px;font-family:sans-serif;">
-  <h2>🎬 MoviesHouse PRO</h2>
+  <h2>🎬 Media Cloud</h2>
   <h3>{file_name} ({file_size_mb:.2f} MB)</h3>
   <br>
-  <a href="/file/{file_id}" style="background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">⬇️ Direct Download / Stream</a>
+  <a href="/file/{file_id}" style="background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">⬇️ Direct Stream / Download</a>
 </body></html>"""
     return web.Response(text=html, content_type="text/html")
 
