@@ -156,3 +156,26 @@ async def get_total_users_count():
             logger.error(f"MongoDB get_total_users_count Error: {e}")
             is_async_mongo = False
     return len(local_user_db)
+
+async def acquire_global_bot_lock(instance_id):
+    """Acquire a global distributed lock in MongoDB so ONLY 1 container/process runs MTProto client across all servers."""
+    global is_async_mongo
+    m_client, m_db = get_mongo()
+    if is_async_mongo and m_db is not None:
+        try:
+            now = datetime.utcnow().timestamp()
+            lock_doc = await m_db.bot_lock.find_one({"_id": "primary_bot_lock"})
+            if lock_doc:
+                last_heartbeat = lock_doc.get("heartbeat", 0)
+                holder = lock_doc.get("holder", "")
+                if holder != instance_id and (now - last_heartbeat < 20):
+                    return False
+            await m_db.bot_lock.update_one(
+                {"_id": "primary_bot_lock"},
+                {"$set": {"holder": instance_id, "heartbeat": now}},
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            logger.error(f"MongoDB acquire_global_bot_lock Error: {e}")
+    return True
