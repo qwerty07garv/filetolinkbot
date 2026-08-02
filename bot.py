@@ -1,10 +1,15 @@
 import os
+import sys
 import uuid
 import time
 import logging
 import asyncio
 from datetime import datetime
 from aiohttp import web
+
+# Force unbuffered output so Render logs show everything immediately
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
 
 from hydrogram import Client, filters
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
@@ -17,13 +22,13 @@ from db_manager import (
 )
 import web_server
 
-BOT_TOKEN   = os.getenv("BOT_TOKEN", "8844186435:AAEQ3EgwIzFut6XdCc-u8_Gc0qn_xsNOd5s")
+BOT_TOKEN   = os.getenv("BOT_TOKEN", "8844186435:AAEQ3EgwIzFut6XdCc-u8_Gc0qn_xsNOd5s").strip()
 API_ID      = int(os.getenv("API_ID", "38319323"))
-API_HASH    = os.getenv("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2")
-BASE_URL    = os.getenv("BASE_URL", "http://222.167.207.30:5050")
-CHANNEL_URL = os.getenv("CHANNEL_URL", "https://t.me/movieshouseworld")
-CHANNEL_ID  = os.getenv("CHANNEL_ID", "@movieshouseworld")
-PORT        = int(os.getenv("PORT", "5000"))
+API_HASH    = os.getenv("API_HASH", "c171e3cfd6fc5c724cda63b0dbcf81d2").strip()
+BASE_URL    = os.getenv("BASE_URL", "http://222.167.207.30:5050").strip()
+CHANNEL_URL = os.getenv("CHANNEL_URL", "https://t.me/movieshouseworld").strip()
+CHANNEL_ID  = os.getenv("CHANNEL_ID", "@movieshouseworld").strip()
+PORT        = int(os.getenv("PORT", "10000"))
 
 raw_admins  = os.getenv("ADMIN_IDS", "1785600474,1855042026")
 ADMIN_IDS   = [int(x.strip()) for x in raw_admins.split(",") if x.strip()]
@@ -33,12 +38,13 @@ START_TIME  = time.time()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+# Use in_memory=True to eliminate SQLite session disk locks on Cloud containers
 app = Client(
     name="movieshouse_bot_session",
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN,
-    workdir="/tmp",
+    in_memory=True,
     workers=32,
     sleep_threshold=60
 )
@@ -98,12 +104,12 @@ async def start_handler(client: Client, message: Message):
         return
 
     welcome_text = (
-        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v7.6</b></blockquote>\n\n"
+        f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v8.0</b></blockquote>\n\n"
         f"👋 Welcome <b>{user_name}</b>!\n\n"
         f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
         f"<pre><code class=\"language-python\">\n"
         f"[SYSTEM ENGINE]\n"
-        f"Engine      : Hydrogram MTProto + Async Motor DB\n"
+        f"Engine      : Hydrogram MTProto (In-Memory RAM Session)\n"
         f"Server      : Render High-Speed Cloud (1 Gbps)\n"
         f"Fallback    : Instant Per-Call Mongo Failover (1000ms)\n"
         f"Health-Check: Auto-Reconnection & RAM Sync Loop Active\n"
@@ -356,8 +362,9 @@ async def handle_callback(client: Client, query: CallbackQuery):
         await query.edit_message_text("<blockquote><b>🗑️ Link Deleted!</b></blockquote>", parse_mode=ParseMode.HTML)
 
 async def main():
+    print(f"🚀 Starting Render Service on Port {PORT}...", flush=True)
     await app.start()
-    logger.info("🤖 Hydrogram MTProto Client Started")
+    logger.info("🤖 Hydrogram MTProto Client Started (In-Memory)")
 
     web_server.set_bot_app(app, asyncio.get_running_loop())
 
@@ -369,9 +376,13 @@ async def main():
     await runner.setup()
     site    = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
-    logger.info(f"🌐 Native aiohttp Web Server Running on Port {PORT}")
+    print(f"🌐 Native aiohttp Web Server Successfully Running on Port {PORT}", flush=True)
 
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"❌ FATAL ENGINE CRASH: {e}", flush=True)
+        raise e
