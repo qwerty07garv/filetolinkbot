@@ -165,13 +165,13 @@
     <div class="wrapper">
         <div class="header">
             <div class="brand">🎬 MoviesHouse <span style="color:#10b981;">PRO</span></div>
-            <div class="badge">⚡ Locked Speed Engine</div>
+            <div class="badge">⚡ Render High-Speed Cloud</div>
         </div>
 
         <div id="toast" class="toast">📋 Stream Link Copied to Clipboard!</div>
 
         <div class="player-container">
-            <video id="player" playsinline controls preload="auto">
+            <video id="player" playsinline controls preload="auto" buffered>
                 <source src="/file/{{ file_id }}" type="{{ mime_type }}">
                 <source src="/file/{{ file_id }}" type="video/mp4">
             </video>
@@ -181,8 +181,8 @@
             <div class="file-title">📄 {{ file_name }}</div>
             <div class="file-meta">
                 <div>📦 <b>Size:</b> {{ file_size }} MB</div>
-                <div>⚡ <b>Server:</b> Direct 222.167.207.30</div>
-                <div>🔒 <b>Engine:</b> Locked Speed + Prefetch Buffer</div>
+                <div>⚡ <b>Server:</b> Render Cloud Engine (1 Gbps)</div>
+                <div>🔒 <b>Engine:</b> Fast Prebuffer & Zero Lag</div>
             </div>
         </div>
 
@@ -215,6 +215,10 @@
 
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
     <script>
+        const fileId = "{{ file_id }}";
+        const streamUrl = window.location.origin + "/file/" + fileId;
+        const hostWithoutProtocol = window.location.host + "/file/" + fileId;
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedSpeed = parseFloat(localStorage.getItem('plyr_user_speed') || '1');
 
@@ -236,11 +240,18 @@
                     'fullscreen'
                 ],
                 seekTime: 10,
+                preload: 'auto',
+                autopause: false,
                 keyboard: { focused: true, global: true },
                 speed: { selected: savedSpeed, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
             });
 
-            // Lock speed in LocalStorage & prevent browser rate resets on range updates
+            // Prebuffer 10-20 seconds in advance on load
+            const videoElem = document.getElementById('player');
+            if (videoElem) {
+                videoElem.preload = 'auto';
+            }
+
             let targetSpeed = savedSpeed;
 
             player.on('ratechange', () => {
@@ -263,13 +274,10 @@
             });
         });
 
-        const fileId = "{{ file_id }}";
-        const streamUrl = "http://222.167.207.30:5050/file/" + fileId;
-
         function playVLC() {
             const isAndroid = /Android/i.test(navigator.userAgent);
             if (isAndroid) {
-                window.location.href = "intent://222.167.207.30:5050/file/" + fileId + "#Intent;scheme=http;type=video/*;package=org.videolan.vlc;end";
+                window.location.href = "intent://" + hostWithoutProtocol + "#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end";
             } else {
                 window.location.href = "vlc://" + streamUrl;
             }
@@ -278,7 +286,7 @@
         function playMX() {
             const isAndroid = /Android/i.test(navigator.userAgent);
             if (isAndroid) {
-                window.location.href = "intent://222.167.207.30:5050/file/" + fileId + "#Intent;scheme=http;type=video/*;package=com.mxtech.videoplayer.ad;end";
+                window.location.href = "intent://" + hostWithoutProtocol + "#Intent;scheme=https;type=video/*;package=com.mxtech.videoplayer.ad;end";
             } else {
                 window.location.href = streamUrl;
             }
