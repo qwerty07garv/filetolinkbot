@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install GCC for C-accelerated TgCrypto compilation
+# Install GCC for C-accelerated TgCrypto compilation if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc build-essential libffi-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -17,4 +17,4 @@ COPY . .
 
 EXPOSE 5000 10000
 
-CMD ["python", "bot.py"]
+CMD ["python", "app.py"]
