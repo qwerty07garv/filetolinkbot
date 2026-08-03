@@ -100,8 +100,17 @@ async def handle_serve_file(request):
         byte_range = range_header.replace("bytes=", "").strip()
         parts = byte_range.split("-")
         start_offset = int(parts[0]) if parts[0] else 0
-        end_offset   = int(parts[1]) if len(parts) > 1 and parts[1] else total_size - 1
+        if len(parts) > 1 and parts[1]:
+            end_offset = int(parts[1])
+        else:
+            end_offset = total_size - 1
 
+        # Range bounds validation
+        if start_offset >= total_size:
+            return web.Response(status=416, headers={"Content-Range": f"bytes */{total_size}"})
+        end_offset = min(end_offset, total_size - 1)
+
+    # ⚡ Telegram Native MTProto Chunk Alignment (1MB = 1024 * 1024 bytes)
     chunk_size       = 1024 * 1024
     offset_chunks    = start_offset // chunk_size
     first_chunk_skip = start_offset % chunk_size
@@ -152,6 +161,12 @@ async def handle_serve_file(request):
                 else:
                     chunk = chunk[skip_needed:]
                     skip_needed = 0
+
+            # 🚀 Chunk Trimming: Requested Range end hote hi connection close
+            if is_range and req_length:
+                remaining = req_length - bytes_written
+                if len(chunk) > remaining:
+                    chunk = chunk[:remaining]
 
             await response.write(chunk)
             bytes_written += len(chunk)
