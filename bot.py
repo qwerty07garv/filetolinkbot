@@ -74,7 +74,7 @@ def get_app():
             bot_token=BOT_TOKEN,
             in_memory=True,
             workers=64,
-            max_concurrent_transfers=10,
+            max_concurrent_transmissions=10,
             sleep_threshold=60
         )
 
