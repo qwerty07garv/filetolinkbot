@@ -401,21 +401,6 @@ async def main():
     await site.start()
     print(f"🌐 Native aiohttp Web Server Running & Health Check Ready on Port {PORT}", flush=True)
 
-    print("🤖 Checking Global Distributed Bot Lock...", flush=True)
-    instance_id = str(uuid.uuid4())[:8]
-    from db_manager import acquire_global_bot_lock
-    lock_acquired = await acquire_global_bot_lock(instance_id)
-    if not lock_acquired:
-        print("⚠️ Another active bot instance holds the Global MongoDB Lock. Operating in Web Server Standby Mode.", flush=True)
-        await asyncio.Event().wait()
-        return
-
-    async def lock_heartbeat():
-        while True:
-            await asyncio.sleep(10)
-            await acquire_global_bot_lock(instance_id)
-
-    asyncio.create_task(lock_heartbeat())
     print("🤖 Instantiating Hydrogram MTProto Client inside active asyncio loop...", flush=True)
     client_app = get_app()
     await client_app.start()
