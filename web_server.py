@@ -1,17 +1,18 @@
 import os
 import re
 import time
+import json
 import asyncio
 import logging
 from aiohttp import web
-from db_manager import get_file_record
+from db_manager import get_file_record, save_file_record
 
 logger = logging.getLogger("aiohttp_server")
 bot_app = None
 
-# Message reference cache with 15-minute TTL & automatic periodic eviction loop
+# Message reference cache with 24-hour TTL & automatic periodic eviction loop
 msg_cache = {}
-CACHE_TTL = 900 # 15 minutes in seconds
+CACHE_TTL = 86400 # 24 hours in seconds
 
 def set_bot_app(instance, loop=None):
     global bot_app
@@ -51,6 +52,9 @@ async def handle_download_page(request):
     file_size_mb = file_info.get("file_size", 0) / (1024 * 1024)
     mime_type = file_info.get("mime_type", "video/mp4")
 
+    # Single Audio Mode: Empty tracks list
+    display_tracks = []
+
     template_path = os.path.join(os.path.dirname(__file__), "templates", "download.html")
     if os.path.exists(template_path):
         with open(template_path, "r", encoding="utf-8") as f:
@@ -59,8 +63,17 @@ async def handle_download_page(request):
                 .replace("{{ file_name }}", file_name)
                 .replace("{{ file_size }}", f"{file_size_mb:.2f}")
                 .replace("{{ mime_type }}", mime_type)
-                .replace("{{ file_id }}", file_id))
-        return web.Response(text=html, content_type="text/html")
+                .replace("{{ file_id }}", file_id)
+                .replace("{{ track_query }}", "")
+                .replace("{{ duration }}", str(file_info.get("duration") or "null"))
+                .replace("{{ audio_tracks }}", "[]"))
+        
+        nocache_headers = {
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        return web.Response(text=html, content_type="text/html", headers=nocache_headers)
 
     html = f"""<!DOCTYPE html><html><head><title>{file_name}</title></head>
 <body style="background:#090d16;color:#fff;text-align:center;padding:40px;font-family:sans-serif;">
@@ -69,7 +82,12 @@ async def handle_download_page(request):
   <br>
   <a href="/file/{file_id}" style="background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">⬇️ Direct Stream / Download</a>
 </body></html>"""
-    return web.Response(text=html, content_type="text/html")
+    nocache_headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
+    return web.Response(text=html, content_type="text/html", headers=nocache_headers)
 
 async def handle_serve_file(request):
     file_id = request.match_info.get("file_id", "")
@@ -80,12 +98,21 @@ async def handle_serve_file(request):
     if not file_info:
         raise web.HTTPNotFound()
 
-    total_size = file_info.get("file_size", 0)
-    mime       = file_info.get("mime_type", "video/mp4")
+    total_size = file_info.get("file_size")
     fname      = file_info.get("file_name", "video.mp4")
+    mime       = file_info.get("mime_type", "video/mp4")
     chat_id    = file_info.get("chat_id")
     msg_id     = file_info.get("message_id")
     tg_file_id = file_info.get("tg_file_id")
+
+    # Clean control characters and escape double quotes
+    fname = "".join(ch for ch in fname if ord(ch) >= 32 and ch != "\x7f")
+    fname = fname.replace('"', '\\"')
+    if not fname:
+        fname = "video.mp4"
+    mime = "".join(ch for ch in mime if ord(ch) >= 32 and ch != "\x7f")
+    if not mime:
+        mime = "video/mp4"
 
     if not bot_app:
         raise web.HTTPServiceUnavailable()
@@ -110,7 +137,7 @@ async def handle_serve_file(request):
             return web.Response(status=416, headers={"Content-Range": f"bytes */{total_size}"})
         end_offset = min(end_offset, total_size - 1)
 
-    # ⚡ Telegram Native MTProto Chunk Alignment (1MB = 1024 * 1024 bytes)
+    # Telegram Chunk Alignment (1MB chunks)
     chunk_size       = 1024 * 1024
     offset_chunks    = start_offset // chunk_size
     first_chunk_skip = start_offset % chunk_size
@@ -120,6 +147,9 @@ async def handle_serve_file(request):
         "Content-Type":        mime,
         "Content-Disposition": f'inline; filename="{fname}"',
         "Accept-Ranges":       "bytes",
+        "Cache-Control":       "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma":              "no-cache",
+        "Expires":             "0"
     }
 
     if is_range and total_size and end_offset is not None:
@@ -134,7 +164,7 @@ async def handle_serve_file(request):
     response = web.StreamResponse(status=status, headers=headers)
     await response.prepare(request)
 
-    # ⚡ Check Message Object Cache (0ms Instant Reuse)
+    # Secure Message Object Resolution with cache
     target = tg_file_id
     now = time.time()
 
@@ -142,12 +172,33 @@ async def handle_serve_file(request):
         target = msg_cache[file_id]['msg']
     elif chat_id and msg_id:
         try:
-            msg = await bot_app.get_messages(chat_id, msg_id)
-            if msg:
+            msg = None
+            try:
+                # Fast path: Try fetching the message directly (usually succeeds instantly)
+                msg = await bot_app.get_messages(chat_id, msg_id)
+            except Exception:
+                # Fallback path: Resolve chat peer to avoid invalid ID errors, then try again
+                try:
+                    await bot_app.get_chat(chat_id)
+                except Exception:
+                    pass
+                try:
+                    msg = await bot_app.get_messages(chat_id, msg_id)
+                except Exception:
+                    pass
+            
+            if not msg or getattr(msg, "empty", True):
+                channel_id_env = os.getenv("CHANNEL_ID", "@movieshouseworld")
+                try:
+                    msg = await bot_app.get_messages(channel_id_env, msg_id)
+                except Exception:
+                    pass
+            
+            if msg and not getattr(msg, "empty", True):
                 target = msg
                 msg_cache[file_id] = {'msg': msg, 'ts': now}
-        except Exception:
-            pass
+        except Exception as ge:
+            logger.error(f"Error resolving file reference: {ge}")
 
     bytes_written = 0
     skip_needed   = first_chunk_skip
@@ -162,7 +213,7 @@ async def handle_serve_file(request):
                     chunk = chunk[skip_needed:]
                     skip_needed = 0
 
-            # 🚀 Chunk Trimming: Requested Range end hote hi connection close
+            # Trim chunk for requested byte range length
             if is_range and req_length:
                 remaining = req_length - bytes_written
                 if len(chunk) > remaining:
@@ -182,6 +233,20 @@ async def handle_serve_file(request):
         pass
     return response
 
+async def handle_api_metadata(request):
+    file_id = request.match_info.get("file_id", "")
+    if not re.match(r"^[a-zA-Z0-9\-]{4,64}$", file_id):
+        return web.json_response({"error": "Invalid file ID"}, status=400)
+
+    file_info = await get_file_record(file_id)
+    if not file_info:
+        return web.json_response({"error": "File not found"}, status=404)
+
+    return web.json_response({
+        "audio_tracks": [],
+        "duration": file_info.get("duration")
+    })
+
 def create_aiohttp_app():
     app = web.Application()
     app.on_startup.append(cleanup_cache_task)
@@ -189,4 +254,5 @@ def create_aiohttp_app():
     app.router.add_get("/dl/{file_id}", handle_download_page)
     app.router.add_get("/download/{file_id}", handle_download_page)
     app.router.add_get("/file/{file_id}", handle_serve_file)
+    app.router.add_get("/dl/api/metadata/{file_id}", handle_api_metadata)
     return app

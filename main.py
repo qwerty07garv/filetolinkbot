@@ -3,6 +3,9 @@ import os
 import socket
 import asyncio
 import traceback
+from dotenv import load_dotenv
+
+load_dotenv()
 
 os.environ["WEB_CONCURRENCY"] = "1"
 

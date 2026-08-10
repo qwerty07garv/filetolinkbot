@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ file_name }} — MoviesHouse PRO</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -17,11 +17,11 @@
             font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
             color: #f8fafc;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            flex-direction: column;
+            padding: 24px 16px;
         }
         .wrapper {
+            margin: auto;
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -58,29 +58,182 @@
         }
         .player-container {
             position: relative;
-            width: 100%;
-            background: #000;
+            background: #020617;
             border-radius: 16px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
             margin-bottom: 24px;
-            --plyr-color-main: #10b981;
+            aspect-ratio: 16 / 9;
         }
-        .file-details { margin-bottom: 24px; }
+        #player {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Double Tap Seek Overlays */
+        .seek-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40%;
+            background: rgba(16, 185, 129, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+        .seek-overlay.left {
+            left: 0;
+            border-radius: 16px 0 0 16px;
+        }
+        .seek-overlay.right {
+            right: 0;
+            border-radius: 0 16px 16px 0;
+        }
+        .seek-overlay.show {
+            animation: seekFade 0.7s ease-out;
+        }
+        @keyframes seekFade {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .seek-icon {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+        .seek-text {
+            font-weight: 700;
+            font-size: 0.95rem;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Center Play/Pause Overlay Animation */
+        .center-play-pause-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 70px;
+            height: 70px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 12;
+            transition: opacity 0.15s ease;
+        }
+        .center-play-pause-overlay.animate {
+            animation: playPauseFadeScale 0.6s ease-out;
+        }
+        @keyframes playPauseFadeScale {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            70% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+        }
+        .play-pause-icon {
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 12px 0 12px 20px;
+            border-color: transparent transparent transparent #ffffff;
+            margin-left: 4px;
+            transition: all 0.1s ease;
+        }
+        .play-pause-icon.pause-state {
+            width: 16px;
+            height: 20px;
+            border-style: double;
+            border-width: 0px 0px 0px 16px;
+            border-color: #ffffff;
+            margin-left: 0;
+        }
+        /* Brightness Level Control Overlay */
+        .brightness-overlay {
+            position: absolute;
+            top: 50%;
+            left: 24px;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 180px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 12;
+            padding: 12px 0;
+            transition: opacity 0.3s ease;
+        }
+        .brightness-overlay.show {
+            opacity: 1;
+        }
+        .brightness-icon {
+            font-size: 1.25rem;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+        .brightness-level-bar {
+            width: 6px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .brightness-level-fill {
+            width: 100%;
+            height: 100%;
+            background: #10b981;
+            transition: height 0.05s linear;
+        }
+        .brightness-value-text {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-top: 8px;
+        }
+        .file-details {
+            margin-bottom: 24px;
+        }
         .file-title {
             font-size: 1.25rem;
             font-weight: 600;
             color: #f1f5f9;
             margin-bottom: 8px;
-            word-break: break-all;
+            word-break: break-word;
+            line-height: 1.4;
         }
         .file-meta {
             display: flex;
-            gap: 16px;
+            gap: 20px;
+            font-size: 0.88rem;
             color: #94a3b8;
-            font-size: 0.9rem;
             flex-wrap: wrap;
+        }
+        .file-meta span {
+            color: #cbd5e1;
         }
         .actions {
             display: grid;
@@ -89,59 +242,89 @@
             margin-bottom: 24px;
         }
         .btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 14px 20px;
-            border-radius: 14px;
-            font-size: 0.95rem;
+            padding: 14px 24px;
+            border-radius: 12px;
             font-weight: 600;
-            text-decoration: none;
-            transition: all 0.25s ease;
+            font-size: 0.95rem;
             cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
             border: none;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
         .btn-primary {
             background: linear-gradient(135deg, #10b981, #059669);
             color: #ffffff;
-            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.6);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
         }
-        .btn-vlc {
-            background: linear-gradient(135deg, #ea580c, #c2410c);
+        .btn-external {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             color: #ffffff;
-            box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.4);
         }
-        .btn-vlc:hover { transform: translateY(-2px); }
-        .btn-mx {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: #ffffff;
-            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+        .btn-external:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
         }
-        .btn-mx:hover { transform: translateY(-2px); }
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
-            color: #f8fafc;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
         .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 1000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             display: none;
-            background: #10b981;
-            color: #fff;
-            padding: 8px 16px;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .lang-select-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 16px;
+            gap: 8px;
+        }
+        .lang-select-container select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
             border-radius: 8px;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-bottom: 12px;
+            padding: 4px 8px;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.82rem;
+            cursor: pointer;
         }
         .shortcuts-hint {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 12px 16px;
             font-size: 0.82rem;
@@ -159,13 +342,60 @@
             border-radius: 4px;
             font-family: monospace;
         }
+
+        /* 📱 Responsive Mobile Layout Styles */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px 8px;
+            }
+            .wrapper {
+                padding: 16px 12px;
+                border-radius: 16px;
+                margin: auto;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .brand {
+                font-size: 1.3rem;
+                white-space: nowrap;
+            }
+            .badge {
+                font-size: 0.75rem;
+                padding: 3px 10px;
+            }
+            .file-title {
+                font-size: 1.05rem;
+                margin-bottom: 6px;
+            }
+            .file-meta {
+                gap: 10px;
+                font-size: 0.8rem;
+            }
+            .actions {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .btn {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+            /* Adjust Plyr controls for mobile spacing */
+            .plyr__controls {
+                padding: 8px !important;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="wrapper">
         <div class="header">
-            <div class="brand">🎬 MoviesHouse <span style="color:#10b981;">PRO</span></div>
-            <div class="badge">⚡ Render High-Speed Cloud</div>
+            <div class="brand" id="brand-title">🎬 MoviesHouse <span style="color:#10b981;">PRO</span></div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="badge" id="badge-server">⚡ VPS High-Speed Cloud</div>
+            </div>
         </div>
 
         <div id="toast" class="toast">📋 Stream Link Copied to Clipboard!</div>
@@ -175,52 +405,203 @@
                 <source src="/file/{{ file_id }}" type="{{ mime_type }}">
                 <source src="/file/{{ file_id }}" type="video/mp4">
             </video>
+            <!-- Double Tap Seek Overlays -->
+            <div id="seek-overlay-left" class="seek-overlay left">
+                <div class="seek-icon">⏪</div>
+                <div class="seek-text">-10s</div>
+            </div>
+            <div id="seek-overlay-right" class="seek-overlay right">
+                <div class="seek-icon">⏩</div>
+                <div class="seek-text">+10s</div>
+            </div>
+            <!-- Center Play/Pause Overlay Button -->
+            <div id="play-pause-overlay" class="center-play-pause-overlay">
+                <div id="play-pause-icon" class="play-pause-icon"></div>
+            </div>
+            <!-- Brightness Overlay Indicator Slider -->
+            <div id="brightness-overlay" class="brightness-overlay">
+                <span class="brightness-icon">☀️</span>
+                <div class="brightness-level-bar">
+                    <div id="brightness-level-fill" class="brightness-level-fill"></div>
+                </div>
+                <span id="brightness-value-text" class="brightness-value-text">100%</span>
+            </div>
         </div>
 
         <div class="file-details">
             <div class="file-title">📄 {{ file_name }}</div>
             <div class="file-meta">
-                <div>📦 <b>Size:</b> {{ file_size }} MB</div>
-                <div>⚡ <b>Server:</b> Render Cloud Engine (1 Gbps)</div>
-                <div>🔒 <b>Engine:</b> Fast Prebuffer & Zero Lag</div>
+                <div>📦 <span id="lbl-size"><b>Size:</b></span> {{ file_size }} MB</div>
+                <div>⚡ <span id="lbl-server"><b>Server:</b></span> VPS Cloud Engine (Singapore)</div>
+                <div>🔒 <span id="lbl-engine"><b>Engine:</b></span> Fast Prebuffer & Zero Lag</div>
             </div>
         </div>
 
         <div class="actions">
-            <a href="/file/{{ file_id }}" class="btn btn-primary">
+            <a href="/file/{{ file_id }}" class="btn btn-primary" id="btn-download">
                 ⬇️ Direct Download
             </a>
-            <button onclick="playVLC()" class="btn btn-vlc">
-                🍿 Play in VLC
+            <button onclick="playExternal()" class="btn btn-external" id="btn-external">
+                🎬 External Player
             </button>
-            <button onclick="playMX()" class="btn btn-mx">
-                🎬 Play in MX Player
-            </button>
-            <button onclick="copyStreamLink()" class="btn btn-secondary">
+            <button onclick="copyStreamLink()" class="btn btn-secondary" id="btn-copy">
                 📋 Copy Link
             </button>
-            <a href="https://t.me/movieshouseworld" target="_blank" class="btn btn-secondary">
+            <button onclick="toggleLanguageModal()" class="btn btn-secondary" id="btn-audio-guide">
+                🔊 Audio Language Guide
+            </button>
+            <a href="https://t.me/movieshouseworld" target="_blank" class="btn btn-secondary" id="btn-join">
                 📢 Join Channel (@movieshouseworld)
             </a>
         </div>
 
         <div class="shortcuts-hint">
-            <span><kbd>Space</kbd> / <kbd>K</kbd> Play/Pause</span>
-            <span><kbd>←</kbd> / <kbd>→</kbd> -10s / +10s Seek</span>
-            <span><kbd>↑</kbd> / <kbd>↓</kbd> Volume</span>
-            <span><kbd>F</kbd> Fullscreen</span>
-            <span><kbd>M</kbd> Mute</span>
+            <span><kbd>Space</kbd> / <kbd>K</kbd> <span id="hint-play">Play/Pause</span></span>
+            <span><kbd>←</kbd> / <kbd>→</kbd> <span id="hint-seek">-10s / +10s Seek</span></span>
+            <span><kbd>↑</kbd> / <kbd>↓</kbd> <span id="hint-volume">Volume</span></span>
+            <span><kbd>F</kbd> <span id="hint-fs">Fullscreen</span></span>
+            <span><kbd>M</kbd> <span id="hint-mute">Mute</span></span>
+        </div>
+
+        <div class="lang-select-container">
+            <select id="ui-lang-select" onchange="changeUILanguage(this.value)">
+                <option value="en">English 🇬🇧</option>
+                <option value="hi">हिन्दी 🇮🇳</option>
+            </select>
         </div>
     </div>
 
-    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
     <script>
+        // 🚨 Global Error Handler to catch and display mobile JS crashes
+        window.onerror = function(message, source, lineno, colno, error) {
+            const debugDiv = document.createElement('div');
+            debugDiv.style.position = 'fixed';
+            debugDiv.style.top = '10px';
+            debugDiv.style.left = '10px';
+            debugDiv.style.background = 'rgba(239, 68, 68, 0.95)';
+            debugDiv.style.color = '#fff';
+            debugDiv.style.padding = '12px 16px';
+            debugDiv.style.borderRadius = '12px';
+            debugDiv.style.zIndex = '99999';
+            debugDiv.style.fontSize = '12px';
+            debugDiv.style.fontFamily = 'monospace';
+            debugDiv.style.maxWidth = '90%';
+            debugDiv.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+            debugDiv.style.wordBreak = 'break-all';
+            debugDiv.innerHTML = `<b>JS Crash:</b> ${message}<br><small>at ${source.split('/').pop()}:${lineno}:${colno}</small>`;
+            document.body.appendChild(debugDiv);
+            return false;
+        };
+
         const fileId = "{{ file_id }}";
         const streamUrl = window.location.origin + "/file/" + fileId;
         const hostWithoutProtocol = window.location.host + "/file/" + fileId;
 
+        const translations = {
+            en: {
+                brand: '🎬 MoviesHouse <span style="color:#10b981;">PRO</span>',
+                server_badge: '⚡ VPS High-Speed Cloud',
+                toast_copied: '📋 Link Copied! Paste it in VLC, PotPlayer, or any player.',
+                direct_download: '⬇️ Direct Download',
+                external_player: '🎬 External Player',
+                copy_link: '📋 Copy Link',
+                audio_guide: '🔊 Audio Language Guide',
+                join_channel: '📢 Join Channel (@movieshouseworld)',
+                size_lbl: '<b>Size:</b>',
+                server_lbl: '<b>Server:</b>',
+                engine_lbl: '<b>Engine:</b>',
+                shortcuts_space: 'Play/Pause',
+                shortcuts_seek: '-10s / +10s Seek',
+                shortcuts_volume: 'Volume',
+                shortcuts_fs: 'Fullscreen',
+                shortcuts_mute: 'Mute',
+                guide_title: '🔊 Audio Language Guide',
+                guide_desc: 'Web browsers (like Chrome/Safari) do not natively support audio track selection in raw MKV/MP4 stream feeds. If this file contains <b>Dual Audio / Multi-Language</b> tracks, use these recommended players:',
+                vlc_desc: 'Click the <b>Play in VLC</b> button on the page. In VLC, go to <b>Audio ➔ Audio Track</b> and select your language.',
+                mx_desc: 'Click the <b>Play in MX Player</b> button. Inside MX Player, tap the music note/audio icon on the top right to switch language.',
+                close_guide: 'Close Guide'
+            },
+            hi: {
+                brand: '🎬 मूवीजहाउस <span style="color:#10b981;">PRO</span>',
+                server_badge: '⚡ वीपीएस हाई-स्पीड क्लाउड',
+                toast_copied: '📋 लिंक कॉपी हो गया! इसे VLC, PotPlayer या किसी भी प्लेयर में पेस्ट करें।',
+                direct_download: '⬇️ डायरेक्ट डाउनलोड',
+                external_player: '🎬 बाहरी प्लेयर',
+                copy_link: '📋 लिंक कॉपी करें',
+                audio_guide: '🔊 ऑडियो भाषा गाइड',
+                join_channel: '📢 चैनल से जुड़ें (@movieshouseworld)',
+                size_lbl: '<b>साइज़:</b>',
+                server_lbl: '<b>सर्वर:</b>',
+                engine_lbl: '<b>इंजन:</b>',
+                shortcuts_space: 'प्ले/पॉज़',
+                shortcuts_seek: '-10s / +10s सीख',
+                shortcuts_volume: 'आवाज़',
+                shortcuts_fs: 'फुलस्क्रीन',
+                shortcuts_mute: 'म्यूट',
+                guide_title: '🔊 ऑडियो भाषा गाइड',
+                guide_desc: 'वेब ब्राउज़र (जैसे Chrome/Safari) मूल रूप से रॉ MKV/MP4 स्ट्रीम फ़ीड में ऑडियो ट्रैक चयन का समर्थन नहीं करते हैं। यदि इस फ़ाइल में <b>डुअल ऑडियो / बहु-भाषा</b> ट्रैक हैं, तो इन अनुशंसित प्लेयर का उपयोग करें:',
+                vlc_desc: 'पेज पर <b>Play in VLC</b> बटन पर क्लिक करें। VLC में, <b>Audio ➔ Audio Track</b> पर जाएं और अपनी भाषा चुनें।',
+                mx_desc: '<b>Play in MX Player</b> बटन पर क्लिक करें। MX Player के अंदर, भाषा बदलने के लिए ऊपर दाईं ओर संगीत नोट/ऑडियो आइकन पर टैप करें।',
+                close_guide: 'गाइड बंद करें'
+            }
+        };
+
+        function changeUILanguage(lang) {
+            localStorage.setItem('movieshouse_ui_lang', lang);
+            const t = translations[lang] || translations.en;
+
+            document.getElementById('brand-title').innerHTML = t.brand;
+            document.getElementById('badge-server').innerText = t.server_badge;
+            document.getElementById('btn-download').innerText = t.direct_download;
+            document.getElementById('btn-external').innerText = t.external_player;
+            document.getElementById('btn-copy').innerText = t.copy_link;
+            document.getElementById('btn-audio-guide').innerText = t.audio_guide;
+            document.getElementById('btn-join').innerText = t.join_channel;
+
+            document.getElementById('lbl-size').innerHTML = t.size_lbl;
+            document.getElementById('lbl-server').innerHTML = t.server_lbl;
+            document.getElementById('lbl-engine').innerHTML = t.engine_lbl;
+
+            document.getElementById('hint-play').innerText = t.shortcuts_space;
+            document.getElementById('hint-seek').innerText = t.shortcuts_seek;
+            document.getElementById('hint-volume').innerText = t.shortcuts_volume;
+            document.getElementById('hint-fs').innerText = t.shortcuts_fs;
+            document.getElementById('hint-mute').innerText = t.shortcuts_mute;
+
+            // Modal translations
+            document.getElementById('modal-title').innerText = t.guide_title;
+            document.getElementById('modal-desc').innerHTML = t.guide_desc;
+            document.getElementById('modal-vlc-desc').innerHTML = t.vlc_desc;
+            document.getElementById('modal-mx-desc').innerHTML = t.mx_desc;
+            document.getElementById('modal-close-btn').innerText = t.close_guide;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            let movieDuration = {{ duration }};
             const savedSpeed = parseFloat(localStorage.getItem('plyr_user_speed') || '1');
+            const savedLang = localStorage.getItem('movieshouse_ui_lang') || 'en';
+            
+            // Set language dropdown value
+            const langSelect = document.getElementById('ui-lang-select');
+            if (langSelect) {
+                langSelect.value = savedLang;
+            }
+            changeUILanguage(savedLang);
+
+            const videoElem = document.getElementById('player');
+            if (videoElem && movieDuration) {
+                try {
+                    Object.defineProperty(videoElem, 'duration', {
+                        get: function() {
+                            return movieDuration;
+                        },
+                        configurable: true
+                    });
+                } catch (e) {
+                    console.warn("Failed to override native video duration property:", e);
+                }
+            }
 
             const player = new Plyr('#player', {
                 controls: [
@@ -246,8 +627,22 @@
                 speed: { selected: savedSpeed, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
             });
 
-            // Prebuffer 10-20 seconds in advance on load
-            const videoElem = document.getElementById('player');
+            // Move overlay elements inside Plyr container so they render on top in fullscreen mode
+            const plyrContainer = document.querySelector('.plyr');
+            if (plyrContainer) {
+                const overlays = [
+                    document.getElementById('seek-overlay-left'),
+                    document.getElementById('seek-overlay-right'),
+                    document.getElementById('play-pause-overlay'),
+                    document.getElementById('brightness-overlay')
+                ];
+                overlays.forEach(overlay => {
+                    if (overlay) {
+                        plyrContainer.appendChild(overlay);
+                    }
+                });
+            }
+
             if (videoElem) {
                 videoElem.preload = 'auto';
             }
@@ -272,33 +667,225 @@
                     player.speed = targetSpeed;
                 }
             });
+
+            // Touch and Gesture Control System (MX Player / VLC mobile style)
+            let startX = 0, startY = 0;
+            let isLeftTouch = false;
+            let isCenterTouch = false;
+            let startBrightness = 100;
+            let currentBrightness = 100;
+            let hasMoved = false;
+            let brightnessTimeout = null;
+            let lastTap = 0;
+            const doubleTapDelay = 300;
+
+            const playerContainer = document.querySelector('.player-container');
+
+            if (playerContainer) {
+                // Touch Start
+                playerContainer.addEventListener('touchstart', function(e) {
+                    if (e.target.closest('.plyr__controls')) return;
+                    const rect = playerContainer.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    startX = touch.clientX - rect.left;
+                    startY = touch.clientY - rect.top;
+                    isLeftTouch = (startX < rect.width * 0.35);
+                    isCenterTouch = (startX >= rect.width * 0.35 && startX <= rect.width * 0.65);
+                    hasMoved = false;
+                    startBrightness = currentBrightness;
+                });
+
+                // Touch Move (Vertical drag on left side adjustments brightness)
+                playerContainer.addEventListener('touchmove', function(e) {
+                    if (e.target.closest('.plyr__controls')) return;
+                    if (e.touches.length > 1) return; // ignore multi-touch gestures
+                    
+                    const rect = playerContainer.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const currentY = touch.clientY - rect.top;
+                    const deltaY = startY - currentY;
+
+                    if (Math.abs(deltaY) > 8) {
+                        hasMoved = true;
+                    }
+
+                    if (isLeftTouch && hasMoved) {
+                        e.preventDefault(); // prevent native scroll down page
+                        const sensitivity = 1.3;
+                        let brightnessDiff = (deltaY / rect.height) * 100 * sensitivity;
+                        currentBrightness = Math.max(10, Math.min(200, startBrightness + brightnessDiff));
+
+                        // Apply brightness CSS filter to video element
+                        if (videoElem) {
+                            videoElem.style.filter = `brightness(${currentBrightness / 100})`;
+                        }
+
+                        // Update Brightness HUD
+                        const overlay = document.getElementById('brightness-overlay');
+                        const fill = document.getElementById('brightness-level-fill');
+                        const valText = document.getElementById('brightness-value-text');
+                        if (overlay && fill && valText) {
+                            clearTimeout(brightnessTimeout);
+                            overlay.classList.add('show');
+                            fill.style.height = `${(currentBrightness / 200) * 100}%`;
+                            valText.innerText = `${Math.round(currentBrightness)}%`;
+                        }
+                    }
+                }, { passive: false });
+
+                // Touch End
+                playerContainer.addEventListener('touchend', function (e) {
+                    if (e.target.closest('.plyr__controls')) return;
+
+                    if (isLeftTouch && hasMoved) {
+                        brightnessTimeout = setTimeout(() => {
+                            const overlay = document.getElementById('brightness-overlay');
+                            if (overlay) overlay.classList.remove('show');
+                        }, 800);
+                        return;
+                    }
+
+                    if (hasMoved) return; // Swiped, do not trigger tap
+
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    const rect = playerContainer.getBoundingClientRect();
+                    const touch = e.changedTouches[0];
+                    const endX = touch.clientX - rect.left;
+
+                    if (tapLength < doubleTapDelay && tapLength > 0) {
+                        // Double Tap Action
+                        const width = rect.width;
+                        if (endX < width * 0.4) {
+                            player.currentTime = Math.max(0, player.currentTime - 10);
+                            showSeekOverlay('left');
+                        } else if (endX > width * 0.6) {
+                            player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
+                            showSeekOverlay('right');
+                        }
+                        e.preventDefault();
+                    } else {
+                        // Single Tap Action: toggle play/pause screen animation
+                        if (isCenterTouch) {
+                            togglePlayPauseOverlay();
+                        }
+                    }
+                    lastTap = currentTime;
+                });
+
+                // Desktop click-to-pause with custom overlay animation
+                playerContainer.addEventListener('click', function(e) {
+                    if (e.target.closest('.plyr__controls')) return;
+                    // Ignore simulated clicks on touch devices to avoid double execution
+                    if (e.pointerType === 'touch' || ('ontouchstart' in window && e.detail === 0)) return;
+                    
+                    togglePlayPauseOverlay();
+                });
+            }
+
+            function togglePlayPauseOverlay() {
+                if (player.paused) {
+                    player.play();
+                } else {
+                    player.pause();
+                }
+
+                const overlay = document.getElementById('play-pause-overlay');
+                const icon = document.getElementById('play-pause-icon');
+                if (overlay && icon) {
+                    if (player.paused) {
+                        icon.classList.remove('pause-state'); // displays play triangle
+                    } else {
+                        icon.classList.add('pause-state'); // displays double pause bars
+                    }
+                    
+                    overlay.classList.remove('animate');
+                    void overlay.offsetWidth; // trigger layout reflow to restart CSS keyframe
+                    overlay.classList.add('animate');
+                }
+            }
+
+            function showSeekOverlay(direction) {
+                const overlay = document.getElementById(`seek-overlay-${direction}`);
+                if (!overlay) return;
+                overlay.classList.remove('show');
+                void overlay.offsetWidth;
+                overlay.classList.add('show');
+            }
         });
 
-        function playVLC() {
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            if (isAndroid) {
-                window.location.href = "intent://" + hostWithoutProtocol + "#Intent;scheme=https;type=video/*;package=org.videolan.vlc;end";
-            } else {
-                window.location.href = "vlc://" + streamUrl;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.innerText = msg;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3500);
             }
         }
 
-        function playMX() {
+        function playExternal() {
             const isAndroid = /Android/i.test(navigator.userAgent);
+            const fullStreamUrl = window.location.origin + "/file/" + fileId;
+            const fullHostWithoutProtocol = window.location.host + "/file/" + fileId;
+            
             if (isAndroid) {
-                window.location.href = "intent://" + hostWithoutProtocol + "#Intent;scheme=https;type=video/*;package=com.mxtech.videoplayer.ad;end";
+                window.location.href = "intent://" + fullHostWithoutProtocol + "#Intent;action=android.intent.action.VIEW;scheme=https;type=video/*;end";
             } else {
-                window.location.href = streamUrl;
+                navigator.clipboard.writeText(fullStreamUrl).then(() => {
+                    const currentLang = localStorage.getItem('movieshouse_ui_lang') || 'en';
+                    const copiedMsg = translations[currentLang]?.toast_copied || translations.en.toast_copied;
+                    showToast(copiedMsg);
+                    setTimeout(() => {
+                        window.location.href = "vlc://" + fullStreamUrl.replace(/^https?:\/\//, "");
+                    }, 500);
+                }).catch(() => {
+                    window.location.href = "vlc://" + fullStreamUrl.replace(/^https?:\/\//, "");
+                });
             }
         }
 
         function copyStreamLink() {
-            navigator.clipboard.writeText(streamUrl).then(() => {
-                const toast = document.getElementById('toast');
-                toast.style.display = 'block';
-                setTimeout(() => { toast.style.display = 'none'; }, 3000);
+            const fullStreamUrl = window.location.origin + "/file/" + fileId;
+            navigator.clipboard.writeText(fullStreamUrl).then(() => {
+                const currentLang = localStorage.getItem('movieshouse_ui_lang') || 'en';
+                const toastMsg = translations[currentLang]?.toast_copied || translations.en.toast_copied;
+                showToast(toastMsg);
             });
         }
+
+        function toggleLanguageModal() {
+            const modal = document.getElementById('lang-modal');
+            if (modal.style.display === 'none' || modal.style.display === '') {
+                modal.style.display = 'flex';
+            } else {
+                modal.style.display = 'none';
+            }
+        }
     </script>
+
+    <!-- Glass-card modal for Audio Language Guide -->
+    <div id="lang-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 24px; padding: 32px; max-width: 500px; width: 100%; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9); text-align: left;">
+            <h3 id="modal-title" style="color: #10b981; margin-bottom: 16px; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">🔊 Audio Language Guide</h3>
+            <p id="modal-desc" style="font-size: 0.92rem; color: #cbd5e1; margin-bottom: 18px; line-height: 1.6;">
+                Web browsers (like Chrome/Safari) do not natively support audio track selection in raw MKV/MP4 stream feeds. If this file contains <b>Dual Audio / Multi-Language</b> tracks, use these recommended players:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+                <div style="background: rgba(255, 255, 255, 0.04); padding: 16px; border-radius: 12px; border-left: 4px solid #ea580c; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <b style="color: #f8fafc; font-size: 0.95rem;">🍊 VLC Player (Recommended):</b><br>
+                    <span id="modal-vlc-desc" style="font-size: 0.85rem; color: #94a3b8; display: block; margin-top: 4px;">Click the <b>Play in VLC</b> button on the page. In VLC, go to <b>Audio ➔ Audio Track</b> and select your language.</span>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.04); padding: 16px; border-radius: 12px; border-left: 4px solid #2563eb; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <b style="color: #f8fafc; font-size: 0.95rem;">🎬 MX Player:</b><br>
+                    <span id="modal-mx-desc" style="font-size: 0.85rem; color: #94a3b8; display: block; margin-top: 4px;">Click the <b>Play in MX Player</b> button. Inside MX Player, tap the music note/audio icon on the top right to switch language.</span>
+                </div>
+            </div>
+            <button id="modal-close-btn" onclick="toggleLanguageModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; width: 100%; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);">
+                Close Guide
+            </button>
+        </div>
+    </div>
 </body>
 </html>

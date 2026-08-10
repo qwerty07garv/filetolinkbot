@@ -72,9 +72,12 @@ def get_app():
             api_id=API_ID,
             api_hash=API_HASH,
             bot_token=BOT_TOKEN,
-            in_memory=True,
-            workers=64,
-            max_concurrent_transmissions=10,
+            in_memory=False,
+            device_model="Samsung Galaxy S24 Ultra",
+            system_version="Android 14",
+            app_version="10.14.5",
+            workers=8,
+            max_concurrent_transmissions=3,
             sleep_threshold=60
         )
 
@@ -99,24 +102,82 @@ def get_app():
                 return
 
             welcome_text = (
-                f"<blockquote><b>🎬 MoviesHouse PRO — Render Cloud Engine v10.0</b></blockquote>\n\n"
+                f"<blockquote><b>🎬 MoviesHouse PRO — VPS Cloud Engine v2.0</b></blockquote>\n\n"
                 f"👋 Welcome <b>{user_name}</b>!\n\n"
                 f"Send any <b>Video, Audio, Movie, Document, Photo, Voice, or Video Note</b> for an <b>Instant Direct Stream & Download Link</b>.\n\n"
-                f"<pre><code class=\"language-python\">\n"
-                f"[SYSTEM ENGINE]\n"
-                f"Engine      : Hydrogram MTProto (In-Memory RAM Session)\n"
-                f"Server      : Render High-Speed Cloud (1 Gbps)\n"
-                f"Fallback    : Instant Per-Call Mongo Failover (1000ms)\n"
-                f"Health-Check: Auto-Reconnection & RAM Sync Loop Active\n"
-                f"Cache       : Native aiohttp Startup Eviction Task\n"
-                f"Worker Pool : 32 Async Threads (Non-blocking)\n"
-                f"Max Size    : Up to 4,000 MB (4GB Supported)\n"
-                f"Channel     : @movieshouseworld\n"
-                f"Status      : Online & Fully Operational\n"
-                f"</code></pre>\n"
+                f"⚡ <b>Server:</b> VPS Cloud Engine (Singapore)\n"
+                f"📦 <b>Max Size:</b> Up to 4,000 MB (4GB)\n"
+                f"📢 <b>Channel:</b> @movieshouseworld\n\n"
                 f"👇 Select an action or send a file directly:"
             )
+
+            # Check for start parameter (e.g. /start file_id)
+            start_args = message.command
+            if len(start_args) > 1:
+                file_id = start_args[1]
+                file_info = await get_file_record(file_id)
+                if file_info:
+                    file_name = file_info.get("file_name", "file")
+                    file_size_bytes = file_info.get("file_size", 0)
+                    file_size_mb  = file_size_bytes / (1024 * 1024)
+                    download_link = f"{BASE_URL}/dl/{file_id}"
+                    direct_link   = f"{BASE_URL}/file/{file_id}"
+
+                    result_text = (
+                        f"<blockquote><b>⚡ Direct File-to-Link Retrieved Successfully!</b></blockquote>\n\n"
+                        f"<pre><code class=\"language-json\">\n"
+                        f"{{\n"
+                        f"  \"file_id\": \"{file_id}\",\n"
+                        f"  \"name\": \"{file_name}\",\n"
+                        f"  \"size\": \"{file_size_mb:.2f} MB\",\n"
+                        f"  \"status\": \"VPS Cloud Stream Ready\"\n"
+                        f"}}\n"
+                        f"</code></pre>\n\n"
+                        f"🔗 <b>Web Download & Stream Page:</b>\n"
+                        f"<code>{download_link}</code>\n\n"
+                        f"⚡ <b>Direct Stream/Download Link:</b>\n"
+                        f"<code>{direct_link}</code>"
+                    )
+
+                    action_buttons = InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("🌐 Open Stream Page", url=download_link),
+                            InlineKeyboardButton("📥 Direct Download", url=direct_link)
+                        ],
+                        [
+                            InlineKeyboardButton("📢 Channel", url=CHANNEL_URL),
+                            InlineKeyboardButton("🗑️ Delete Link", callback_data=f"del_{file_id}")
+                        ]
+                    ])
+                    await message.reply_text(result_text, parse_mode=ParseMode.HTML, reply_markup=action_buttons)
+                    return
+                else:
+                    await message.reply_text("❌ File not found or link has expired.")
+                    return
+
             await message.reply_text(welcome_text, parse_mode=ParseMode.HTML, reply_markup=get_main_keyboard())
+
+        @app.on_message(filters.command("help"))
+        async def help_handler(client: Client, message: Message):
+            user_name = message.from_user.first_name if message.from_user else "User"
+            help_text = (
+                f"<blockquote><b>❓ MoviesHouse PRO — Help Guide</b></blockquote>\n\n"
+                f"👋 Hi <b>{user_name}</b>! Here is how to use this bot:\n\n"
+                f"📁 <b>How to get Stream/Download links:</b>\n"
+                f"1. Send or forward any video, audio, or document file to this bot.\n"
+                f"2. The bot will instantly generate a fast stream and download link.\n"
+                f"3. You can click on the link to watch online or download directly.\n\n"
+                f"🍿 <b>Using the Video Player:</b>\n"
+                f"• Use the <b>VLC</b> or <b>MX Player</b> buttons to watch in external players.\n"
+                f"• In the web player, click the settings gear icon to adjust playback speed.\n"
+                f"• Click the <b>Audio Language Guide</b> on the web page to see how to switch languages in VLC or MX Player.\n\n"
+                f"📢 <b>Support:</b> @movieshouseworld\n\n"
+                f"💻 <b>Commands:</b>\n"
+                f"• /start - Launch the bot and check status\n"
+                f"• /help - Display this help guide"
+            )
+            back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Back to Menu", callback_data="btn_home")]])
+            await message.reply_text(help_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
         @app.on_message(filters.command("broadcast") & filters.private)
         async def broadcast_handler(client: Client, message: Message):
@@ -182,14 +243,14 @@ def get_app():
                 f"Total Registered Users : {total_users}\n"
                 f"Total Links Generated  : {total_files}\n"
                 f"Uptime                 : {uptime_sec} seconds\n"
-                f"Server Host            : Render Cloud Platform\n"
+                f"Server Host            : VPS Cloud Platform\n"
                 f"Engine                 : Async Motor MongoDB + Hydrogram\n"
                 f"Channel                : @movieshouseworld\n"
                 f"</code></pre>"
             )
             await message.reply_text(stats_text, parse_mode=ParseMode.HTML)
 
-        @app.on_message(filters.document | filters.video | filters.audio | filters.photo | filters.voice | filters.video_note | filters.animation)
+        @app.on_message(filters.private & (filters.document | filters.video | filters.audio | filters.photo | filters.voice | filters.video_note | filters.animation))
         async def handle_file(client: Client, message: Message):
             user_id   = message.from_user.id if message.from_user else 0
             user_name = message.from_user.first_name if message.from_user else "User"
@@ -274,7 +335,7 @@ def get_app():
                 f"  \"file_id\": \"{file_id}\",\n"
                 f"  \"name\": \"{file_name}\",\n"
                 f"  \"size\": \"{file_size_mb:.2f} MB\",\n"
-                f"  \"status\": \"Render Cloud Stream Ready\"\n"
+                f"  \"status\": \"VPS Cloud Stream Ready\"\n"
                 f"}}\n"
                 f"</code></pre>\n\n"
                 f"🔗 <b>Web Download & Stream Page:</b>\n"
@@ -313,9 +374,14 @@ def get_app():
                 total = await get_total_stats()
                 users = await get_total_users_count()
                 uptime_sec = int(time.time() - START_TIME)
+                uptime_str = f"{uptime_sec // 3600}h {(uptime_sec % 3600) // 60}m"
                 stats_text = (
-                    f"<blockquote><b>📊 MoviesHouse PRO Enterprise System Stats</b></blockquote>\n\n"
-                    f"<pre><code class=\"language-python\">\n[DATABASE STATS]\nTotal Users          : {users}\nTotal Links Generated : {total}\nUptime               : {uptime_sec}s\nServer               : Render Cloud Platform\nEngine               : Async Motor MongoDB + Hydrogram\nChannel              : @movieshouseworld\n</code></pre>"
+                    f"<blockquote><b>📊 System Statistics</b></blockquote>\n\n"
+                    f"• <b>Total Users:</b> {users}\n"
+                    f"• <b>Links Generated:</b> {total}\n"
+                    f"• <b>Bot Uptime:</b> {uptime_str}\n"
+                    f"• <b>Server:</b> VPS Cloud (Singapore)\n"
+                    f"• <b>Channel:</b> @movieshouseworld"
                 )
                 back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
                 await query.edit_message_text(stats_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
@@ -329,22 +395,40 @@ def get_app():
                     ping_ms = 12.4
 
                 speed_text = (
-                    f"<blockquote><b>⚡ Real-Time Network & Ping Analytics</b></blockquote>\n\n"
-                    f"<pre><code class=\"language-bash\">\n"
-                    f"Telegram MTProto Ping : {ping_ms} ms\n"
-                    f"Server Host           : Render Cloud Platform (1 Gbps)\n"
-                    f"Database Driver       : Async Motor MongoDB\n"
-                    f"Hardware Decryption   : TgCrypto C-Accelerated\n"
-                    f"Status                : 100% Operational\n"
-                    f"</code></pre>"
+                    f"<blockquote><b>⚡ Server Ping & Speed</b></blockquote>\n\n"
+                    f"• <b>Telegram Ping:</b> {ping_ms} ms\n"
+                    f"• <b>Port Speed:</b> 1 Gbps (VPS Singapore)\n"
+                    f"• <b>Status:</b> 100% Operational"
                 )
                 back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
                 await query.edit_message_text(speed_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
             elif data == "btn_security":
-                sec_text = f"<blockquote><b>🛡️ Enterprise Security & Privacy Guard</b></blockquote>\n\n• Server: Render Cloud Host.\n• Powered by Hydrogram MTProto + Async Motor DB."
+                sec_text = (
+                    f"<blockquote><b>🛡️ Security & Privacy</b></blockquote>\n\n"
+                    f"• <b>Encryption:</b> Secure Telegram MTProto\n"
+                    f"• <b>Database:</b> Safe & Encrypted MongoDB\n"
+                    f"• <b>Files:</b> No files are stored on our servers permanently."
+                )
                 back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
                 await query.edit_message_text(sec_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
+
+            elif data == "btn_help":
+                help_text = (
+                    f"<blockquote><b>❓ MoviesHouse PRO — Help Guide</b></blockquote>\n\n"
+                    f"👋 Hi! Here is how to use this bot:\n\n"
+                    f"📁 <b>How to get Stream/Download links:</b>\n"
+                    f"1. Send or forward any video, audio, or document file to this bot.\n"
+                    f"2. The bot will instantly generate a fast stream and download link.\n"
+                    f"3. You can click on the link to watch online or download directly.\n\n"
+                    f"🍿 <b>Using the Video Player:</b>\n"
+                    f"• Use the <b>VLC</b> or <b>MX Player</b> buttons to watch in external players.\n"
+                    f"• In the web player, click the settings gear icon to adjust playback speed.\n"
+                    f"• Click the <b>Audio Language Guide</b> on the web page to see how to switch languages in VLC or MX Player.\n\n"
+                    f"📢 <b>Support:</b> @movieshouseworld"
+                )
+                back_kb = InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Back to Menu", callback_data="btn_home")]])
+                await query.edit_message_text(help_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
             elif data == "btn_home":
                 user_name = query.from_user.first_name if query.from_user else "User"
@@ -385,7 +469,7 @@ def get_main_keyboard():
         ],
         [
             InlineKeyboardButton("🛡️ Security & Privacy", callback_data="btn_security"),
-            InlineKeyboardButton("☁️ Cloud Backup", callback_data="btn_backup")
+            InlineKeyboardButton("❓ Help Guide", callback_data="btn_help")
         ],
         [
             InlineKeyboardButton("📢 Updates Channel (@movieshouseworld)", url=CHANNEL_URL)
@@ -403,12 +487,28 @@ async def main():
 
     print("🤖 Instantiating Hydrogram MTProto Client inside active asyncio loop...", flush=True)
     client_app = get_app()
-    await client_app.start()
-    print("✅ Hydrogram MTProto Client Started Successfully in RAM!", flush=True)
+    
+    async def start_client_with_retry():
+        while True:
+            try:
+                await client_app.start()
+                print("✅ Hydrogram MTProto Client Started Successfully!", flush=True)
+                web_server.set_bot_app(client_app, asyncio.get_running_loop())
+                await init_indexes()
+                break
+            except Exception as ex:
+                import traceback
+                from hydrogram.errors import FloodWait
+                if isinstance(ex, FloodWait):
+                    wait_sec = ex.value + 5
+                    print(f"⚠️ Telegram client startup postponed due to FloodWait ({ex.value}s). Retrying in {wait_sec} seconds...", flush=True)
+                    await asyncio.sleep(wait_sec)
+                else:
+                    print(f"❌ Hydrogram startup error: {ex}. Retrying in 15 seconds...", flush=True)
+                    traceback.print_exc()
+                    await asyncio.sleep(15)
 
-    web_server.set_bot_app(client_app, asyncio.get_running_loop())
-
-    await init_indexes()
+    asyncio.create_task(start_client_with_retry())
     asyncio.create_task(mongo_health_check_loop())
 
     await asyncio.Event().wait()
