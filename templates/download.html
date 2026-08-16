@@ -400,6 +400,16 @@
 
         <div id="toast" class="toast">📋 Stream Link Copied to Clipboard!</div>
 
+        <!-- Audio Fix Quick Banner -->
+        <div id="audio-fix-banner" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.88rem; flex-wrap: wrap;">
+            <div style="color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                <span>🔊</span> <span>Browser me aawaz nahi aa rahi? (Dolby / EAC3 5.1 Audio Fix)</span>
+            </div>
+            <button id="banner-fix-btn" onclick="toggleAudioFix()" style="background: #f59e0b; color: #090d16; border: none; padding: 6px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; white-space: nowrap; font-size: 0.82rem; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                ⚡ Play with AAC Sound
+            </button>
+        </div>
+
         <div class="player-container">
             <video id="player" playsinline controls preload="auto" buffered>
                 <source src="/file/{{ file_id }}" type="{{ mime_type }}">
@@ -862,6 +872,7 @@
         let isAudioFixed = false;
         function toggleAudioFix() {
             const btn = document.getElementById('btn-fix-audio');
+            const bannerBtn = document.getElementById('banner-fix-btn');
             
             if (!isAudioFixed) {
                 isAudioFixed = true;
@@ -869,7 +880,12 @@
                     btn.innerHTML = '✅ Audio Fixed (AAC Active)';
                     btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                 }
-                showToast('🔊 Transcoding Dolby Audio to AAC Stereo... Video stream starting with Sound!');
+                if (bannerBtn) {
+                    bannerBtn.innerHTML = '✅ AAC Sound Active';
+                    bannerBtn.style.background = '#10b981';
+                    bannerBtn.style.color = '#ffffff';
+                }
+                showToast('🔊 Converting audio to AAC Stereo... Video stream playing with Sound!');
                 if (window.plyrPlayer) {
                     const currTime = window.plyrPlayer.currentTime || 0;
                     window.plyrPlayer.source = {
@@ -894,6 +910,11 @@
                 if (btn) {
                     btn.innerHTML = '🔊 Fix Audio (AAC Sound Mode)';
                     btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                }
+                if (bannerBtn) {
+                    bannerBtn.innerHTML = '⚡ Play with AAC Sound';
+                    bannerBtn.style.background = '#f59e0b';
+                    bannerBtn.style.color = '#090d16';
                 }
                 if (window.plyrPlayer) {
                     const currTime = window.plyrPlayer.currentTime || 0;

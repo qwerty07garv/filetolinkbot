@@ -272,10 +272,13 @@ async def handle_transcode_file(request, file_info=None, target=None):
     ffmpeg_cmd = [
         "ffmpeg", "-loglevel", "error",
         "-i", "pipe:0",
+        "-map", "0:v:0",
+        "-map", "0:a:0?",
         "-c:v", "copy",
         "-c:a", "aac",
         "-b:a", "192k",
         "-ac", "2",
+        "-sn", "-dn",
         "-f", "mp4",
         "-movflags", "frag_keyframe+empty_moov+default_base_moof",
         "pipe:1"
