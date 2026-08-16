@@ -606,7 +606,7 @@
                 }
             }
 
-            const player = new Plyr('#player', {
+            window.plyrPlayer = new Plyr('#player', {
                 controls: [
                     'play-large',
                     'rewind',
@@ -629,6 +629,7 @@
                 keyboard: { focused: true, global: true },
                 speed: { selected: savedSpeed, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
             });
+            const player = window.plyrPlayer;
 
             // Move overlay elements inside Plyr container so they render on top in fullscreen mode
             const plyrContainer = document.querySelector('.plyr');
@@ -860,9 +861,7 @@
 
         let isAudioFixed = false;
         function toggleAudioFix() {
-            const video = document.getElementById('player');
             const btn = document.getElementById('btn-fix-audio');
-            const currTime = video ? video.currentTime : 0;
             
             if (!isAudioFixed) {
                 isAudioFixed = true;
@@ -871,10 +870,24 @@
                     btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                 }
                 showToast('🔊 Transcoding Dolby Audio to AAC Stereo... Video stream starting with Sound!');
-                if (video) {
-                    video.src = '/file/' + fileId + '?transcode=1';
-                    video.currentTime = currTime;
-                    video.play();
+                if (window.plyrPlayer) {
+                    const currTime = window.plyrPlayer.currentTime || 0;
+                    window.plyrPlayer.source = {
+                        type: 'video',
+                        title: '{{ file_name }}',
+                        sources: [
+                            {
+                                src: '/transcode/' + fileId,
+                                type: 'video/mp4'
+                            }
+                        ]
+                    };
+                    setTimeout(() => {
+                        try {
+                            window.plyrPlayer.currentTime = currTime;
+                            window.plyrPlayer.play();
+                        } catch (e) {}
+                    }, 300);
                 }
             } else {
                 isAudioFixed = false;
@@ -882,10 +895,24 @@
                     btn.innerHTML = '🔊 Fix Audio (AAC Sound Mode)';
                     btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
                 }
-                if (video) {
-                    video.src = '/file/' + fileId;
-                    video.currentTime = currTime;
-                    video.play();
+                if (window.plyrPlayer) {
+                    const currTime = window.plyrPlayer.currentTime || 0;
+                    window.plyrPlayer.source = {
+                        type: 'video',
+                        title: '{{ file_name }}',
+                        sources: [
+                            {
+                                src: '/file/' + fileId,
+                                type: '{{ mime_type }}'
+                            }
+                        ]
+                    };
+                    setTimeout(() => {
+                        try {
+                            window.plyrPlayer.currentTime = currTime;
+                            window.plyrPlayer.play();
+                        } catch (e) {}
+                    }, 300);
                 }
             }
         }
