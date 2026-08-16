@@ -117,9 +117,6 @@ async def handle_serve_file(request):
     if not bot_app:
         raise web.HTTPServiceUnavailable()
 
-    if request.query.get("transcode") == "1" or request.query.get("aac") == "1":
-        return await handle_transcode_file(request, file_info, target=None)
-
     range_header = request.headers.get("Range", None)
     start_offset = 0
     end_offset   = total_size - 1 if total_size else None
@@ -234,113 +231,6 @@ async def handle_serve_file(request):
         pass
     return response
 
-async def handle_transcode_file(request, file_info=None, target=None):
-    file_id = request.match_info.get("file_id", "")
-    if not file_info:
-        file_info = await get_file_record(file_id)
-        if not file_info:
-            raise web.HTTPNotFound()
-
-    fname = file_info.get("file_name", "video.mp4")
-    fname = "".join(ch for ch in fname if ord(ch) >= 32 and ch != "\x7f").replace('"', '\\"')
-    if not fname.lower().endswith(".mp4"):
-        fname = os.path.splitext(fname)[0] + ".mp4"
-
-    chat_id = file_info.get("chat_id")
-    msg_id  = file_info.get("message_id")
-    tg_file_id = file_info.get("tg_file_id")
-
-    if not bot_app:
-        raise web.HTTPServiceUnavailable()
-
-    if not target:
-        now = time.time()
-        if file_id in msg_cache and (now - msg_cache[file_id]['ts'] < CACHE_TTL):
-            target = msg_cache[file_id]['msg']
-        elif chat_id and msg_id:
-            try:
-                msg = await bot_app.get_messages(chat_id, msg_id)
-                if msg and not getattr(msg, "empty", True):
-                    target = msg
-                    msg_cache[file_id] = {'msg': msg, 'ts': now}
-            except Exception:
-                pass
-        if not target:
-            target = tg_file_id
-
-    # FFmpeg Real-Time Transcoder: Video Copy (0% CPU), Audio to AAC Stereo (100% Browser Compatible)
-    ffmpeg_cmd = [
-        "ffmpeg", "-loglevel", "error",
-        "-i", "pipe:0",
-        "-map", "0:v:0",
-        "-map", "0:a:0?",
-        "-c:v", "copy",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-ac", "2",
-        "-sn", "-dn",
-        "-f", "mp4",
-        "-movflags", "frag_keyframe+empty_moov+default_base_moof",
-        "pipe:1"
-    ]
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *ffmpeg_cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL
-        )
-    except Exception as fe:
-        logger.error(f"FFmpeg launch error: {fe}")
-        raise web.HTTPInternalServerError()
-
-    headers = {
-        "Content-Type": "video/mp4",
-        "Content-Disposition": f'inline; filename="{fname}"',
-        "Cache-Control": "no-cache",
-        "Access-Control-Allow-Origin": "*"
-    }
-    response = web.StreamResponse(status=200, headers=headers)
-    await response.prepare(request)
-
-    async def feed_ffmpeg():
-        try:
-            async for chunk in bot_app.stream_media(target):
-                if proc.stdin and not proc.stdin.is_closing():
-                    proc.stdin.write(chunk)
-                    await proc.stdin.drain()
-            if proc.stdin and not proc.stdin.is_closing():
-                proc.stdin.close()
-        except Exception as e:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-
-    feed_task = asyncio.create_task(feed_ffmpeg())
-
-    try:
-        while True:
-            chunk = await proc.stdout.read(64 * 1024)
-            if not chunk:
-                break
-            await response.write(chunk)
-    except Exception as e:
-        logger.debug(f"Transcode streaming client disconnected: {e}")
-    finally:
-        try:
-            proc.kill()
-        except Exception:
-            pass
-        await feed_task
-
-    try:
-        await response.write_eof()
-    except Exception:
-        pass
-    return response
-
 async def handle_api_metadata(request):
     file_id = request.match_info.get("file_id", "")
     if not re.match(r"^[a-zA-Z0-9\-]{4,64}$", file_id):
@@ -362,6 +252,5 @@ def create_aiohttp_app():
     app.router.add_get("/dl/{file_id}", handle_download_page)
     app.router.add_get("/download/{file_id}", handle_download_page)
     app.router.add_get("/file/{file_id}", handle_serve_file)
-    app.router.add_get("/transcode/{file_id}", handle_transcode_file)
     app.router.add_get("/dl/api/metadata/{file_id}", handle_api_metadata)
     return app
