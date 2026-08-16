@@ -64,7 +64,35 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
             margin-bottom: 24px;
+            width: 100%;
             aspect-ratio: 16 / 9;
+        }
+        .player-container .plyr {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .player-container .plyr__video-wrapper {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #000;
+        }
+        .player-container video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+        }
+        .player-container .plyr__controls {
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 20 !important;
         }
         #player {
             width: 100%;
@@ -685,7 +713,7 @@
             if (playerContainer) {
                 // Touch Start
                 playerContainer.addEventListener('touchstart', function(e) {
-                    if (e.target.closest('.plyr__controls')) return;
+                    if (e.target.closest('.plyr__controls') || e.target.closest('.plyr__control--overlaid')) return;
                     const rect = playerContainer.getBoundingClientRect();
                     const touch = e.touches[0];
                     startX = touch.clientX - rect.left;
@@ -698,7 +726,7 @@
 
                 // Touch Move (Vertical drag on left side adjustments brightness)
                 playerContainer.addEventListener('touchmove', function(e) {
-                    if (e.target.closest('.plyr__controls')) return;
+                    if (e.target.closest('.plyr__controls') || e.target.closest('.plyr__control--overlaid')) return;
                     if (e.touches.length > 1) return; // ignore multi-touch gestures
                     
                     const rect = playerContainer.getBoundingClientRect();
@@ -736,7 +764,7 @@
 
                 // Touch End
                 playerContainer.addEventListener('touchend', function (e) {
-                    if (e.target.closest('.plyr__controls')) return;
+                    if (e.target.closest('.plyr__controls') || e.target.closest('.plyr__control--overlaid')) return;
 
                     if (isLeftTouch && hasMoved) {
                         brightnessTimeout = setTimeout(() => {
@@ -776,7 +804,7 @@
 
                 // Desktop click-to-pause with custom overlay animation
                 playerContainer.addEventListener('click', function(e) {
-                    if (e.target.closest('.plyr__controls')) return;
+                    if (e.target.closest('.plyr__controls') || e.target.closest('.plyr__control--overlaid')) return;
                     // Ignore simulated clicks on touch devices to avoid double execution
                     if (e.pointerType === 'touch' || ('ontouchstart' in window && e.detail === 0)) return;
                     
