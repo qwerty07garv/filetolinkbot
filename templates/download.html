@@ -441,6 +441,9 @@
             <a href="/file/{{ file_id }}" class="btn btn-primary" id="btn-download">
                 ⬇️ Direct Download
             </a>
+            <button onclick="toggleAudioFix()" class="btn btn-primary" id="btn-fix-audio" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                🔊 Fix Audio (AAC Sound Mode)
+            </button>
             <button onclick="playExternal()" class="btn btn-external" id="btn-external">
                 🎬 External Player
             </button>
@@ -853,6 +856,38 @@
                 const toastMsg = translations[currentLang]?.toast_copied || translations.en.toast_copied;
                 showToast(toastMsg);
             });
+        }
+
+        let isAudioFixed = false;
+        function toggleAudioFix() {
+            const video = document.getElementById('player');
+            const btn = document.getElementById('btn-fix-audio');
+            const currTime = video ? video.currentTime : 0;
+            
+            if (!isAudioFixed) {
+                isAudioFixed = true;
+                if (btn) {
+                    btn.innerHTML = '✅ Audio Fixed (AAC Active)';
+                    btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                }
+                showToast('🔊 Transcoding Dolby Audio to AAC Stereo... Video stream starting with Sound!');
+                if (video) {
+                    video.src = '/file/' + fileId + '?transcode=1';
+                    video.currentTime = currTime;
+                    video.play();
+                }
+            } else {
+                isAudioFixed = false;
+                if (btn) {
+                    btn.innerHTML = '🔊 Fix Audio (AAC Sound Mode)';
+                    btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                }
+                if (video) {
+                    video.src = '/file/' + fileId;
+                    video.currentTime = currTime;
+                    video.play();
+                }
+            }
         }
 
         function toggleLanguageModal() {
